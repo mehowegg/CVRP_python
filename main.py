@@ -100,7 +100,7 @@ def deliver(latitudes, longitudes, demands, n_vehicles, capacities, depot_index)
     vehicle_routes = {}
     for vehicle in vehicles:
         vehicle_routes[vehicle[0]] = {}
-        vehicle_routes[vehicle[0]]['Locations'] = []
+        vehicle_routes[vehicle[0]]['Locations'] = [depot_index]
         vehicle_routes[vehicle[0]]['Distance'] = 0
 
     while len(delivered) != len(latitudes):
@@ -117,12 +117,21 @@ def deliver(latitudes, longitudes, demands, n_vehicles, capacities, depot_index)
             vehicle_routes[vehicle[0]]['Distance'] += distance
             vehicle_routes[vehicle[0]]['Locations'].append(des_id)
 
+    for vehicle in vehicles:
+        current_location = vehicle[2]
+        distance = matrix[current_location][0]
+        vehicle_routes[vehicle[0]]['Locations'].append(depot_index)
+        vehicle_routes[vehicle[0]]['Distance'] += distance
+
     return vehicle_routes
 
 
 def pprint(dictionary):
+    total_distance = 0
     for key, value in dictionary.items():
-        print(f'{key}\n{value}\n')
+        print(f'{key}: {value}\n')
+        total_distance += value['Distance']
+    print(f'Total distance is {round(total_distance)} km.')
 
 
 results = deliver(latitudes1, longitudes1, demands1, 5, [1000, 1000, 1000, 1000, 1000], 0)
