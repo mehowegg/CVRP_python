@@ -97,7 +97,7 @@ for v in vehicles1:
 
 
 def select_destination(distances, weights, delivered, capacity, demands):
-    index, distance = np.nan, np.nan
+    index, distance = 0, distances[0]
     for i in range(len(weights)):
         distance = random.choices(distances, weights)[0]
         index = distances.index(distance)
@@ -109,7 +109,7 @@ def select_destination(distances, weights, delivered, capacity, demands):
 
 def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_groups=1):
     d_matrix = create_distance_matrix(latitudes, longitudes)
-    d_weights = create_weights_matrix(len(latitudes), len(longitudes))
+    w_matrix = create_weights_matrix(len(latitudes), len(longitudes))
     original_capacities = capacities
 
     best_group = [float('inf'), []]
@@ -124,16 +124,19 @@ def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_g
 
         while len(delivered) != len(demands):
             for ant in ants:
-                des_id, distance = select_destination(d_matrix[ant[2]], d_weights[ant[2]], delivered, ant[1], demands)
+                des_id, distance = select_destination(d_matrix[ant[2]], w_matrix[ant[2]], delivered, ant[1], demands)
                 delivered.append(des_id)
+                if des_id == start_index:
+                    ant[1] = original_capacities[ant[0]]
                 ant[2] = des_id
                 ants_routes[ant[0]]['Locations'].append(des_id)
                 ants_routes[ant[0]]['Distance'] += distance
 
         for ant in ants:
-            d_to_startpoint = d_matrix[ant[2]][0]
-            ants_routes[ant[0]]['Locations'].append(start_index)
-            ants_routes[ant[0]]['Distance'] += d_to_startpoint
+            if ants_routes[ant[0]]['Locations'][-1] != 0:
+                d_to_startpoint = d_matrix[ant[2]][0]
+                ants_routes[ant[0]]['Locations'].append(start_index)
+                ants_routes[ant[0]]['Distance'] += d_to_startpoint
 
         # store group run results
         group_total_distance = 0
@@ -146,6 +149,9 @@ def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_g
             best_group[1] = []
             for ant in ants_routes.keys():
                 best_group[1].append(ants_routes[ant]['Locations'])
+                
+        # update weights
+        w_matrix = update_weights(w_matrix, best_group[1])
 
     return best_group
 
