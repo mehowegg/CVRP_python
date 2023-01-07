@@ -60,6 +60,27 @@ def create_weights_matrix(n_latitudes, n_longitudes):
     return normalized
 
 
+def normalize_weights(w_matrix):
+    total = np.sum(w_matrix)
+    for row in range(len(w_matrix)):
+        for cell in range(len(w_matrix[row])):
+            w_matrix[row, cell] = w_matrix[row, cell]/total
+
+    return w_matrix
+
+
+def update_weights(w_matrix, ants_routes, alpha=1.3, beta=0.9):
+    w_matrix = w_matrix * beta
+
+    for route in ants_routes:
+        for i in range(len(route) - 1):
+            w_matrix[route[i]][route[i+1]] = w_matrix[route[i]][route[i+1]] * alpha
+
+    w_matrix = normalize_weights(w_matrix)
+
+    return w_matrix
+
+
 def create_ants(n_ants, capacities, start_index):
     if n_ants != len(capacities):
         print('Nr of ants doesn\'t much length of capacities')
@@ -135,19 +156,6 @@ def pprint(dictionary):
         print(f'{key}: {value}\n')
         total_distance += value['Distance']
     print(f'Total distance is {round(total_distance)} km.')
-
-
-def ant_algorithm(latitudes, longitudes, demands, start_index, n_ants, capacities, n_groups, alpha, n):
-    matrix = create_distance_matrix(latitudes, longitudes)
-    original_capacities = capacities
-    p = np.ones(latitudes * longitudes).reshape(latitudes, longitudes) / (latitudes * longitudes)
-
-    for i in range(n):
-        for group in n_groups:
-            delivered = [0]
-            for ant in n_ants:
-                if len(delivered) == len(latitudes):
-                    break
 
 
 results = deliver(latitudes1, longitudes1, demands1, 5, [1000, 1000, 1000, 1000, 1000], 0, 15)
