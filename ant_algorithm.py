@@ -82,8 +82,6 @@ def update_weights(w_matrix, ants_routes, alpha=1.3, beta=0.9):
 
 
 def create_ants(n_ants, capacities, start_index):
-    if n_ants != len(capacities):
-        print('Nr of ants doesn\'t much length of capacities')
     ants = []
     for i in range(n_ants):
         ants.append([i, capacities[i], start_index])
@@ -91,18 +89,26 @@ def create_ants(n_ants, capacities, start_index):
     return ants
 
 
-'''vehicles1 = create_vehicles(5, [10, 10, 10, 10, 10])
-for v in vehicles1:
-    print(v)'''
+def select_destination(distances, weights, delivered, capacity, demands, depot_index):
+    local_weights = weights.copy()
+    for city in delivered:
+        local_weights[city] = 0
 
+    for city_demand in demands:
+        if city_demand > capacity:
+            local_weights[city] = 0
 
-def select_destination(distances, weights, delivered, capacity, demands):
-    index, distance = 0, distances[0]
-    for i in range(len(weights)):
-        distance = random.choices(distances, weights)[0]
+    count_not_zeros = 0
+    for weight in local_weights:
+        if weight != 0:
+            count_not_zeros += 1
+
+    if count_not_zeros == 0:
+        index = 0
+        distance = distances[depot_index]
+    else:
+        distance = random.choices(distances, local_weights, k=1)[0]
         index = distances.index(distance)
-        if index not in delivered and demands[index] <= capacity:
-            break
 
     return index, distance
 
@@ -127,7 +133,7 @@ def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_g
 
             while len(delivered) != len(demands):
                 for ant in ants:
-                    des_id, distance = select_destination(d_matrix[ant[2]], w_matrix[ant[2]], delivered, ant[1], demands)
+                    des_id, distance = select_destination(d_matrix[ant[2]], w_matrix[ant[2]], delivered, ant[1], demands, start_index)
                     delivered.append(des_id)
                     if des_id == start_index:
                         ant[1] = original_capacities[ant[0]]
@@ -155,7 +161,8 @@ def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_g
         # update weights
         w_matrix = update_weights(w_matrix, best_group[1])
 
-        print(f'Group best: {best_group[0]}')
+        #print(f'Group best: {best_group[0]}')
+        #print(best_group)
         group_bests.append(best_group[0])
         if best_group[0] < best_run[0]:
             best_run[0] = best_group[0]
@@ -173,15 +180,23 @@ def pprint(dictionary):
 
 
 # execution with parameters
-run_best, groups_bests = deliver(latitudes = latitudes1,
-                                 longitudes = longitudes1,
-                                 demands = demands1,
-                                 n_ants = 5,
-                                 capacities = [1000, 1000, 1000, 1000, 1000],
-                                 start_index = 0,
-                                 n_groups = 10,
-                                 n_runs = 150)
+run_best, groups_bests = deliver(latitudes=latitudes1,
+                                 longitudes=longitudes1,
+                                 demands=demands1,
+                                 n_ants=5,
+                                 capacities=[1000, 1000, 1000, 1000, 1000],
+                                 start_index=0,
+                                 n_groups=10,
+                                 n_runs=150)
+
+check_delivered = []
+for route in run_best[1]:
+    for city in route:
+        if city != 0 and city in check_delivered:
+            print('problem:', city)
+        check_delivered.append(city)
 
 plt.plot([i for i in range(len(groups_bests))], groups_bests)
 plt.show()
+print()
 print(run_best)
