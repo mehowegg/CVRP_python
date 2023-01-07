@@ -1,7 +1,7 @@
 import random
 import pandas as pd
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import pulp
 import itertools
 import gmaps
@@ -107,53 +107,61 @@ def select_destination(distances, weights, delivered, capacity, demands):
     return index, distance
 
 
-def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_groups=1):
+def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_groups=1, n_runs=1):
     d_matrix = create_distance_matrix(latitudes, longitudes)
     w_matrix = create_weights_matrix(len(latitudes), len(longitudes))
     original_capacities = capacities
 
-    best_group = [float('inf'), []]
+    best_run = [float('inf'), []]
+    group_bests = []
+    for run in range(n_runs):
 
-    for group in range(n_groups):
-        # make a group run
-        delivered = [start_index]
-        ants = create_ants(n_ants, capacities, start_index)
-        ants_routes = {}
-        for ant in ants:
-            ants_routes[ant[0]] = {'Locations': [start_index], 'Distance': 0}
-
-        while len(delivered) != len(demands):
+        best_group = [float('inf'), []]
+        for group in range(n_groups):
+            # make a group run
+            delivered = [start_index]
+            ants = create_ants(n_ants, capacities, start_index)
+            ants_routes = {}
             for ant in ants:
-                des_id, distance = select_destination(d_matrix[ant[2]], w_matrix[ant[2]], delivered, ant[1], demands)
-                delivered.append(des_id)
-                if des_id == start_index:
-                    ant[1] = original_capacities[ant[0]]
-                ant[2] = des_id
-                ants_routes[ant[0]]['Locations'].append(des_id)
-                ants_routes[ant[0]]['Distance'] += distance
+                ants_routes[ant[0]] = {'Locations': [start_index], 'Distance': 0}
 
-        for ant in ants:
-            if ants_routes[ant[0]]['Locations'][-1] != 0:
-                d_to_startpoint = d_matrix[ant[2]][0]
-                ants_routes[ant[0]]['Locations'].append(start_index)
-                ants_routes[ant[0]]['Distance'] += d_to_startpoint
+            while len(delivered) != len(demands):
+                for ant in ants:
+                    des_id, distance = select_destination(d_matrix[ant[2]], w_matrix[ant[2]], delivered, ant[1], demands)
+                    delivered.append(des_id)
+                    if des_id == start_index:
+                        ant[1] = original_capacities[ant[0]]
+                    ant[2] = des_id
+                    ants_routes[ant[0]]['Locations'].append(des_id)
+                    ants_routes[ant[0]]['Distance'] += distance
 
-        # store group run results
-        group_total_distance = 0
-        for ant in ants_routes.keys():
-            group_total_distance += ants_routes[ant]['Distance']
-        print(f'Group {group}: {group_total_distance}')
+            for ant in ants:
+                if ants_routes[ant[0]]['Locations'][-1] != 0:
+                    d_to_startpoint = d_matrix[ant[2]][0]
+                    ants_routes[ant[0]]['Locations'].append(start_index)
+                    ants_routes[ant[0]]['Distance'] += d_to_startpoint
 
-        if group_total_distance < best_group[0]:
-            best_group[0] = group_total_distance
-            best_group[1] = []
+            # store group run results
+            group_total_distance = 0
             for ant in ants_routes.keys():
-                best_group[1].append(ants_routes[ant]['Locations'])
-                
+                group_total_distance += ants_routes[ant]['Distance']
+
+            if group_total_distance < best_group[0]:
+                best_group[0] = group_total_distance
+                best_group[1] = []
+                for ant in ants_routes.keys():
+                    best_group[1].append(ants_routes[ant]['Locations'])
+
         # update weights
         w_matrix = update_weights(w_matrix, best_group[1])
 
-    return best_group
+        print(f'Group best: {best_group[0]}')
+        group_bests.append(best_group[0])
+        if best_group[0] < best_run[0]:
+            best_run[0] = best_group[0]
+            best_run[1] = best_group[1]
+
+    return best_run, group_bests
 
 
 def pprint(dictionary):
@@ -164,5 +172,7 @@ def pprint(dictionary):
     print(f'Total distance is {round(total_distance)} km.')
 
 
-results = deliver(latitudes1, longitudes1, demands1, 5, [1000, 1000, 1000, 1000, 1000], 0, 15)
-print(results)
+run_best, groups_bests = deliver(latitudes1, longitudes1, demands1, 5, [1000, 1000, 1000, 1000, 1000], 0, 10, 200)
+plt.plot([i for i in range(len(groups_bests))], groups_bests)
+plt.show()
+print(run_best)
