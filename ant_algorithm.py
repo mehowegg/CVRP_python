@@ -172,7 +172,16 @@ def pprint(dictionary):
     print(f'Total distance is {round(total_distance)} km.')
 
 
-run_best, groups_bests = deliver(latitudes1, longitudes1, demands1, 5, [1000, 1000, 1000, 1000, 1000], 0, 10, 200)
+# execution with parameters
+run_best, groups_bests = deliver(latitudes = latitudes1,
+                                 longitudes = longitudes1,
+                                 demands = demands1,
+                                 n_ants = 5,
+                                 capacities = [1000, 1000, 1000, 1000, 1000],
+                                 start_index = 0,
+                                 n_groups = 10,
+                                 n_runs = 150)
+
 plt.plot([i for i in range(len(groups_bests))], groups_bests)
 plt.show()
 print(run_best)
