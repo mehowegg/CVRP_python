@@ -189,14 +189,13 @@ run_best, groups_bests = deliver(latitudes=latitudes1,
                                  n_groups=10,
                                  n_runs=150)
 
-check_delivered = []
-for route in run_best[1]:
-    for city in route:
-        if city != 0 and city in check_delivered:
-            print('problem:', city)
-        check_delivered.append(city)
 
 plt.plot([i for i in range(len(groups_bests))], groups_bests)
+plt.xlabel('Runs')
+plt.ylabel('Total distance [km]')
+plt.title('How results change from run 1 to 150')
+plt.savefig('results_for_runs.png')
 plt.show()
+
 print()
 print(run_best)
