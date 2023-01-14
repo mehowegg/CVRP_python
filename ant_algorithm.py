@@ -2,10 +2,7 @@ import random
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import pulp
-import itertools
-import gmaps
-import googlemaps
+import time
 import haversine as hs
 
 
@@ -69,7 +66,7 @@ def normalize_weights(w_matrix):
     return w_matrix
 
 
-def update_weights(w_matrix, ants_routes, alpha=1.3, beta=0.9):
+def update_weights(w_matrix, ants_routes, alpha, beta):
     w_matrix = w_matrix * beta
 
     for route in ants_routes:
@@ -113,7 +110,7 @@ def select_destination(distances, weights, delivered, capacity, demands, depot_i
     return index, distance
 
 
-def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_groups=1, n_runs=1):
+def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, alpha, beta, n_groups=1, n_runs=1):
     d_matrix = create_distance_matrix(latitudes, longitudes)
     w_matrix = create_weights_matrix(len(latitudes), len(longitudes))
     original_capacities = capacities
@@ -159,7 +156,7 @@ def deliver(latitudes, longitudes, demands, n_ants, capacities, start_index, n_g
                     best_group[1].append(ants_routes[ant]['Locations'])
 
         # update weights
-        w_matrix = update_weights(w_matrix, best_group[1])
+        w_matrix = update_weights(w_matrix, best_group[1], alpha, beta)
 
         #print(f'Group best: {best_group[0]}')
         #print(best_group)
@@ -180,14 +177,18 @@ def pprint(dictionary):
 
 
 # execution with parameters
+start_time = time.time()
 run_best, groups_bests = deliver(latitudes=latitudes1,
                                  longitudes=longitudes1,
                                  demands=demands1,
                                  n_ants=5,
                                  capacities=[1000, 1000, 1000, 1000, 1000],
                                  start_index=0,
+                                 alpha=1.3,
+                                 beta=0.9,
                                  n_groups=10,
-                                 n_runs=150)
+                                 n_runs=200)
+end_time = time.time()
 
 
 plt.plot([i for i in range(len(groups_bests))], groups_bests)
@@ -195,7 +196,17 @@ plt.xlabel('Runs')
 plt.ylabel('Total distance [km]')
 plt.title('How results change from run 1 to 150')
 plt.savefig('results_for_runs.png')
-plt.show()
 
-print()
-print(run_best)
+message = 'Total distance: ' + str(round(run_best[0], 2)) + ' km\n\nVehicle routes:\n'
+for route in run_best[1]:
+    for city in route:
+        message += str(city) + ', '
+    message += '\n'
+message += f'\nAlgorithm executed in {round(end_time-start_time, 2)} seconds.'
+
+results_file = open('results.txt', 'w')
+results_file.write(message)
+results_file.close()
+
+print(f'Algorithm executed in {round(end_time-start_time, 2)} seconds.\n'
+      f'Please see results.txt and results_for_runs.png files.')
